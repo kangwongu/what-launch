@@ -6,6 +6,7 @@ import GenreSelector from './components/GenreSelector'
 import Button from './components/Button'
 import MapView from './components/MapView'
 import RestaurantCard from './components/RestaurantCard'
+import LunchGuide from './components/LunchGuide'
 import BottomSheet from './components/BottomSheet'
 import { useIsMobile } from './hooks/useIsMobile'
 import { addressToCoordinates } from './lib/kakao-map'
@@ -313,6 +314,11 @@ function App() {
           <PanelContent {...panelProps} />
         </BottomSheet>
       )}
+
+      {/* 점심 가이드 콘텐츠 */}
+      <section className="border-t border-gray-200 pt-6">
+        <LunchGuide />
+      </section>
     </div>
   )
 }
