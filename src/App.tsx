@@ -127,6 +127,10 @@ function PanelContent({
         </section>
       )}
 
+      {/* 점심 가이드 콘텐츠 */}
+      <section className="border-t border-gray-200 pt-6">
+        <LunchGuide />
+      </section>
     </div>
   )
 }
@@ -314,11 +318,6 @@ function App() {
           <PanelContent {...panelProps} />
         </BottomSheet>
       )}
-
-      {/* 점심 가이드 콘텐츠 */}
-      <section className="border-t border-gray-200 pt-6">
-        <LunchGuide />
-      </section>
     </div>
   )
 }
