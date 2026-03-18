@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 핵심 제약조건
 
-- **운영비 $0 유지**: 무료 티어만 사용 (GitHub Pages 호스팅, 카카오맵 API 일 300,000건)
+- **운영비 $0 유지**: 무료 티어만 사용 (Vercel 호스팅, 카카오맵 API 일 300,000건)
 - **1인 유지보수**: 과도한 추상화·복잡한 아키텍처 금지. 단순하고 읽기 쉬운 코드 유지
 - **라이브러리 추가 금지**: 현재 package.json 의존성 외 추가 불가. SSR 프레임워크(Next.js 등), 상태관리(Redux/Zustand), HTTP 클라이언트(Axios), 폼 라이브러리 모두 금지
 - **Tailwind CSS only**: 커스텀 CSS 최소화, 모바일 퍼스트 반응형
@@ -44,7 +44,7 @@ SPA (React + Vite, CSR only, 백엔드 없음). 모든 식당 데이터는 카�
 
 ## Deployment
 
-GitHub Pages. 프로덕션 base path: `/what-launch/`
+Vercel. 루트 도메인(`/`)으로 배포. 환경변수 `VITE_KAKAO_MAP_API_KEY`는 Vercel 대시보드에서 설정.
 
 ## 참고 문서
 
