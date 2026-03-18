@@ -15,6 +15,8 @@ export default function MapView({
 }: MapViewProps) {
   const mapContainer = useRef<HTMLDivElement>(null)
   const mapRef = useRef<any>(null)
+  const restaurantMarkerRef = useRef<any>(null)
+  const restaurantInfoWindowRef = useRef<any>(null)
   const [isSDKLoaded, setIsSDKLoaded] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -37,17 +39,27 @@ export default function MapView({
 
     const { kakao } = window
 
-    // 기본 위치 (서울시청)
     const defaultPosition = new kakao.maps.LatLng(37.5665, 126.978)
 
-    // 지도 생성
     const mapOption = {
       center: defaultPosition,
-      level: 5, // 확대 레벨
+      level: 5,
     }
 
     const map = new kakao.maps.Map(mapContainer.current, mapOption)
     mapRef.current = map
+  }, [isSDKLoaded])
+
+  // ResizeObserver → map.relayout()
+  useEffect(() => {
+    if (!mapContainer.current || !mapRef.current) return
+
+    const observer = new ResizeObserver(() => {
+      mapRef.current?.relayout()
+    })
+
+    observer.observe(mapContainer.current)
+    return () => observer.disconnect()
   }, [isSDKLoaded])
 
   // 사용자 위치 마커 표시
@@ -62,28 +74,24 @@ export default function MapView({
     existingMarkers.forEach((marker: any) => marker.setMap(null))
     map.markers = []
 
-    // 사용자 위치
     const userPosition = new kakao.maps.LatLng(userLocation.lat, userLocation.lng)
 
-    // 사용자 위치 마커 생성 (기본 마커 사용)
     const userMarker = new kakao.maps.Marker({
       position: userPosition,
       map: map,
     })
 
-    // 사용자 위치 인포윈도우
     const userInfoWindow = new kakao.maps.InfoWindow({
-      content: `<div style="padding:5px;font-size:12px;">📍 ${userLocation.address}</div>`,
+      content: `<div style="padding:5px;font-size:12px;max-width:200px;word-break:break-word;overflow:hidden;">📍 ${userLocation.address}</div>`,
     })
 
     userInfoWindow.open(map, userMarker)
 
-    // 마커 배열에 추가
     if (!map.markers) map.markers = []
     map.markers.push(userMarker)
 
-    // 지도 중심 이동
-    map.setCenter(userPosition)
+    // 부드러운 이동
+    map.panTo(userPosition)
   }, [isSDKLoaded, userLocation])
 
   // 식당 위치 마커 표시
@@ -93,26 +101,40 @@ export default function MapView({
     const { kakao } = window
     const map = mapRef.current
 
-    // 식당 위치
     const restaurantPosition = new kakao.maps.LatLng(
       restaurant.lat,
       restaurant.lng
     )
 
-    // 식당 마커 생성 (기본 마커 사용)
-    const restaurantMarker = new kakao.maps.Marker({
+    const markerOptions: any = {
       position: restaurantPosition,
       map: map,
-    })
+    }
 
-    // 식당 정보 인포윈도우
+    // 마커 바운스 애니메이션 (SDK에 있을 때만)
+    if (kakao.maps.Animation?.BOUNCE) {
+      markerOptions.animation = kakao.maps.Animation.BOUNCE
+    }
+
+    // 이전 식당 마커/인포윈도우 제거
+    if (restaurantMarkerRef.current) {
+      restaurantMarkerRef.current.setMap(null)
+      restaurantMarkerRef.current = null
+    }
+    if (restaurantInfoWindowRef.current) {
+      restaurantInfoWindowRef.current.close()
+      restaurantInfoWindowRef.current = null
+    }
+
+    const restaurantMarker = new kakao.maps.Marker(markerOptions)
+
     const distanceText = restaurant.distance
       ? `${(restaurant.distance / 1000).toFixed(1)}km`
       : ''
     const ratingText = restaurant.rating ? `⭐ ${restaurant.rating}` : ''
     const content = `
-      <div style="padding:8px;font-size:13px;min-width:150px;">
-        <div style="font-weight:bold;margin-bottom:4px;">${restaurant.name}</div>
+      <div style="padding:8px;font-size:13px;min-width:150px;max-width:250px;word-break:break-word;overflow:hidden;">
+        <div style="font-weight:bold;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${restaurant.name}</div>
         <div style="color:#666;font-size:11px;margin-bottom:2px;">${restaurant.address}</div>
         ${distanceText ? `<div style="color:#666;font-size:11px;">거리: ${distanceText}</div>` : ''}
         ${ratingText ? `<div style="color:#666;font-size:11px;">${ratingText}</div>` : ''}
@@ -125,11 +147,10 @@ export default function MapView({
 
     restaurantInfoWindow.open(map, restaurantMarker)
 
-    // 마커 배열에 추가
-    if (!map.markers) map.markers = []
-    map.markers.push(restaurantMarker)
+    // ref에 저장
+    restaurantMarkerRef.current = restaurantMarker
+    restaurantInfoWindowRef.current = restaurantInfoWindow
 
-    // 두 위치를 모두 보이도록 지도 범위 조정
     if (userLocation) {
       const bounds = new kakao.maps.LatLngBounds()
       bounds.extend(
@@ -138,13 +159,13 @@ export default function MapView({
       bounds.extend(restaurantPosition)
       map.setBounds(bounds)
     } else {
-      map.setCenter(restaurantPosition)
+      map.panTo(restaurantPosition)
     }
   }, [isSDKLoaded, restaurant, userLocation])
 
   if (error) {
     return (
-      <div className="w-full h-96 bg-gray-100 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-300">
+      <div className="w-full h-full bg-surface-50 flex items-center justify-center border-2 border-dashed border-surface-200">
         <div className="text-center text-gray-600">
           <p className="text-sm font-medium mb-2">지도를 불러올 수 없습니다</p>
           <p className="text-xs text-red-600">{error}</p>
@@ -155,7 +176,7 @@ export default function MapView({
 
   if (!isSDKLoaded) {
     return (
-      <div className="w-full h-96 bg-gray-100 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-300">
+      <div className="w-full h-full bg-surface-50 flex items-center justify-center border-2 border-dashed border-surface-200">
         <div className="text-center text-gray-600">
           <p className="text-sm">지도를 불러오는 중...</p>
         </div>
@@ -164,14 +185,15 @@ export default function MapView({
   }
 
   return (
-    <div className="w-full h-96 rounded-lg overflow-hidden shadow-md border border-gray-200">
+    <div className="w-full h-full relative">
       <div ref={mapContainer} className="w-full h-full" />
       {isLoading && (
-        <div className="absolute inset-0 bg-white bg-opacity-50 flex items-center justify-center">
-          <p className="text-sm text-gray-600">검색 중...</p>
+        <div className="absolute inset-0 bg-surface-50/60 flex items-center justify-center">
+          <div className="bg-white rounded-lg shadow-lg px-6 py-4 text-center">
+            <p className="text-sm text-gray-600 font-medium">맛집 검색 중...</p>
+          </div>
         </div>
       )}
     </div>
   )
 }
-

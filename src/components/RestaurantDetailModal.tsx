@@ -28,7 +28,7 @@ export default function RestaurantDetailModal({
         onClick={(e) => e.stopPropagation()}
       >
         {/* 헤더 */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex items-center justify-between">
+        <div className="sticky top-0 bg-white border-b border-surface-200 p-4 flex items-center justify-between">
           <h2 className="text-xl font-bold text-gray-800">식당 상세 정보</h2>
           <button
             onClick={onClose}
@@ -47,7 +47,9 @@ export default function RestaurantDetailModal({
               {restaurant.name}
             </h3>
             {restaurant.categoryName && (
-              <p className="text-sm text-gray-500">{restaurant.categoryName}</p>
+              <span className="inline-block px-2 py-1 text-xs font-medium bg-primary-100 text-primary-700 rounded-full">
+                {restaurant.categoryName}
+              </span>
             )}
             {restaurant.rating && (
               <div className="flex items-center gap-1 text-yellow-500 mt-2">
@@ -82,7 +84,7 @@ export default function RestaurantDetailModal({
                 <span className="text-gray-500 text-sm">📞</span>
                 <a
                   href={`tel:${restaurant.phone}`}
-                  className="text-blue-600 hover:text-blue-800 text-sm"
+                  className="text-primary-600 hover:text-primary-800 text-sm"
                 >
                   {restaurant.phone}
                 </a>
@@ -92,7 +94,7 @@ export default function RestaurantDetailModal({
 
           {/* 카카오맵 상세 페이지 링크 */}
           {restaurant.placeUrl && (
-            <div className="pt-4 border-t border-gray-200">
+            <div className="pt-4 border-t border-surface-200">
               <a
                 href={restaurant.placeUrl}
                 target="_blank"
@@ -113,7 +115,6 @@ export default function RestaurantDetailModal({
               size="md"
               fullWidth
               onClick={onClose}
-              className="hover:bg-gray-50"
             >
               지도에서 보기
             </Button>
@@ -123,4 +124,3 @@ export default function RestaurantDetailModal({
     </div>
   )
 }
-

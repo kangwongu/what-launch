@@ -1,15 +1,134 @@
 import { useState } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
 import { FoodGenre, Location, Restaurant } from './types'
 import LocationInput from './components/LocationInput'
 import GenreSelector from './components/GenreSelector'
 import Button from './components/Button'
 import MapView from './components/MapView'
 import RestaurantCard from './components/RestaurantCard'
+import BottomSheet from './components/BottomSheet'
+import { useIsMobile } from './hooks/useIsMobile'
 import { addressToCoordinates } from './lib/kakao-map'
 import {
   searchRestaurantsByKeyword,
   selectRandomRestaurant,
 } from './lib/restaurant'
+
+function PanelContent({
+  location,
+  locationError,
+  genreError,
+  selectedGenre,
+  selectedRestaurant,
+  searchError,
+  searchRadius,
+  isFormValid,
+  isLoading,
+  onLocationChange,
+  onGenreSelect,
+  onRecommend,
+  onReselect,
+  onExpandRadius,
+  onKeyDown,
+}: {
+  location: string
+  locationError: string
+  genreError: string
+  selectedGenre: FoodGenre | null
+  selectedRestaurant: Restaurant | null
+  searchError: string
+  searchRadius: number
+  isFormValid: boolean
+  isLoading: boolean
+  onLocationChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+  onGenreSelect: (genre: FoodGenre) => void
+  onRecommend: () => void
+  onReselect: () => void
+  onExpandRadius: () => void
+  onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void
+}) {
+  return (
+    <div className="space-y-6 min-w-0">
+      {/* 헤더 */}
+      <header className="text-center">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-1">
+          What Launch 🍽️
+        </h1>
+        <p className="text-xs sm:text-sm text-gray-500">
+          오늘 점심 뭐먹지? 고민을 가볍게 해소하는 뽑기 게임
+        </p>
+      </header>
+
+      {/* 위치 입력 */}
+      <section>
+        <LocationInput
+          label="위치 입력"
+          value={location}
+          onChange={onLocationChange}
+          onKeyDown={onKeyDown}
+          error={locationError}
+        />
+      </section>
+
+      {/* 장르 선택 */}
+      <section>
+        <GenreSelector
+          selectedGenre={selectedGenre}
+          onSelectGenre={onGenreSelect}
+          error={genreError}
+        />
+      </section>
+
+      {/* 추천받기 버튼 */}
+      <section>
+        <Button
+          variant="gradient"
+          size="lg"
+          fullWidth
+          onClick={onRecommend}
+          disabled={!isFormValid || isLoading}
+          className={`shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 ${isLoading ? 'animate-pulse' : ''}`}
+        >
+          {isLoading ? '검색 중...' : '추천받기 🎲'}
+        </Button>
+      </section>
+
+      {/* 에러 메시지 */}
+      <AnimatePresence>
+        {searchError && (
+          <motion.section
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+          >
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <p className="text-sm text-red-600">{searchError}</p>
+              {searchRadius <= 1000 && (
+                <button
+                  onClick={onExpandRadius}
+                  className="mt-2 text-sm font-medium text-primary-600 hover:text-primary-800"
+                >
+                  검색 범위 넓히기 (2km)
+                </button>
+              )}
+            </div>
+          </motion.section>
+        )}
+      </AnimatePresence>
+
+      {/* 식당 카드 */}
+      {selectedRestaurant && (
+        <section>
+          <RestaurantCard
+            restaurant={selectedRestaurant}
+            onReselect={onReselect}
+          />
+        </section>
+      )}
+
+    </div>
+  )
+}
 
 function App() {
   const [location, setLocation] = useState('')
@@ -21,6 +140,7 @@ function App() {
     useState<Restaurant | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [searchError, setSearchError] = useState('')
+  const [searchRadius, setSearchRadius] = useState(1000)
 
   const handleLocationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setLocation(e.target.value)
@@ -30,7 +150,6 @@ function App() {
   const handleGenreSelect = (genre: FoodGenre) => {
     setSelectedGenre(genre)
     if (genreError) setGenreError('')
-    // 장르 변경 시 식당 정보 초기화
     setSelectedRestaurant(null)
   }
 
@@ -41,14 +160,12 @@ function App() {
     setSearchError('')
 
     try {
-      // 식당 검색 (기본 반경 1km)
       const restaurants = await searchRestaurantsByKeyword(
         userLocation,
         selectedGenre,
-        1000 // 1km
+        searchRadius
       )
 
-      // 이전에 선택한 식당 제외하고 랜덤 선택
       const filteredRestaurants = selectedRestaurant
         ? restaurants.filter((r) => r.id !== selectedRestaurant.id)
         : restaurants
@@ -72,7 +189,6 @@ function App() {
   }
 
   const handleRecommend = async () => {
-    // 유효성 검사
     let hasError = false
 
     if (!location.trim()) {
@@ -92,24 +208,20 @@ function App() {
     setGenreError('')
 
     try {
-      // 주소를 좌표로 변환
       const coordinates = await addressToCoordinates(location)
       setUserLocation(coordinates)
       setSearchError('')
 
-      // 식당 검색 (기본 반경 1km)
       const restaurants = await searchRestaurantsByKeyword(
         coordinates,
         selectedGenre!,
-        1000 // 1km
+        searchRadius
       )
 
-      // 랜덤으로 하나 선택
       const randomRestaurant = selectRandomRestaurant(restaurants)
       setSelectedRestaurant(randomRestaurant)
     } catch (error) {
       if (error instanceof Error) {
-        // 위치 검색 오류인지 식당 검색 오류인지 구분
         if (error.message.includes('주소') || error.message.includes('장소')) {
           setLocationError(error.message)
           setUserLocation(null)
@@ -125,92 +237,84 @@ function App() {
     }
   }
 
+  const handleExpandRadius = async () => {
+    setSearchRadius(2000)
+    setSearchError('')
+    if (userLocation && selectedGenre) {
+      setIsLoading(true)
+      try {
+        const restaurants = await searchRestaurantsByKeyword(
+          userLocation,
+          selectedGenre,
+          2000
+        )
+        const randomRestaurant = selectRandomRestaurant(restaurants)
+        setSelectedRestaurant(randomRestaurant)
+      } catch (error) {
+        setSearchError(
+          error instanceof Error
+            ? error.message
+            : '식당 검색 중 오류가 발생했습니다.'
+        )
+      } finally {
+        setIsLoading(false)
+      }
+    }
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleRecommend()
+    }
+  }
+
   const isFormValid = location.trim() !== '' && selectedGenre !== null
+  const isMobile = useIsMobile()
+
+  const panelProps = {
+    location,
+    locationError,
+    genreError,
+    selectedGenre,
+    selectedRestaurant,
+    searchError,
+    searchRadius,
+    isFormValid,
+    isLoading,
+    onLocationChange: handleLocationChange,
+    onGenreSelect: handleGenreSelect,
+    onRecommend: handleRecommend,
+    onReselect: handleReselect,
+    onExpandRadius: handleExpandRadius,
+    onKeyDown: handleKeyDown,
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      <div className="container mx-auto px-4 py-6 sm:py-8 max-w-4xl">
-        {/* 헤더 */}
-        <header className="text-center mb-8 sm:mb-12">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-800 mb-3">
-            What Launch 🍽️
-          </h1>
-          <p className="text-sm sm:text-base text-gray-600">
-            오늘 점심 뭐먹지? 고민을 가볍게 해소하는 뽑기 게임
-          </p>
-        </header>
+    <div className="h-screen flex flex-col md:flex-row overflow-hidden bg-surface-50">
+      {/* 데스크톱: 사이드 패널 */}
+      {!isMobile && (
+        <aside className="w-1/3 max-w-md h-full overflow-y-auto p-6 bg-white shadow-lg z-10">
+          <PanelContent {...panelProps} />
+        </aside>
+      )}
 
-        {/* 메인 컨텐츠 */}
-        <main className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 md:p-10 space-y-8">
-          {/* 위치 입력 섹션 */}
-          <section>
-            <LocationInput
-              label="위치 입력"
-              value={location}
-              onChange={handleLocationChange}
-              error={locationError}
-            />
-          </section>
-
-          {/* 음식 장르 선택 섹션 */}
-          <section>
-            <GenreSelector
-              selectedGenre={selectedGenre}
-              onSelectGenre={handleGenreSelect}
-              error={genreError}
-            />
-          </section>
-
-          {/* 추천받기 버튼 */}
-          <section>
-            <Button
-              variant="primary"
-              size="lg"
-              fullWidth
-              onClick={handleRecommend}
-              disabled={!isFormValid}
-              className="shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200"
-            >
-              추천받기
-            </Button>
-          </section>
-
-          {/* 지도 영역 */}
-          <section>
-            <MapView
-              userLocation={userLocation}
-              restaurant={selectedRestaurant}
-              isLoading={isLoading}
-            />
-          </section>
-
-          {/* 식당 정보 영역 */}
-          {searchError && (
-            <section>
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                <p className="text-sm text-red-600">{searchError}</p>
-              </div>
-            </section>
-          )}
-
-          {selectedRestaurant && (
-            <section>
-              <RestaurantCard
-                restaurant={selectedRestaurant}
-                onReselect={handleReselect}
-              />
-            </section>
-          )}
-        </main>
-
-        {/* 푸터 */}
-        <footer className="text-center mt-8 text-sm text-gray-500">
-          <p>Made with ❤️ for lunch decisions</p>
-        </footer>
+      {/* 지도 영역 */}
+      <div className="flex-1 relative min-h-0">
+        <MapView
+          userLocation={userLocation}
+          restaurant={selectedRestaurant}
+          isLoading={isLoading}
+        />
       </div>
+
+      {/* 모바일: 하단 시트 */}
+      {isMobile && (
+        <BottomSheet expanded={selectedRestaurant !== null}>
+          <PanelContent {...panelProps} />
+        </BottomSheet>
+      )}
     </div>
   )
 }
 
 export default App
-
