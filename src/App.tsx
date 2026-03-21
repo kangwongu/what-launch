@@ -7,6 +7,8 @@ import Button from './components/Button'
 import MapView from './components/MapView'
 import RestaurantCard from './components/RestaurantCard'
 import LunchGuide from './components/LunchGuide'
+import Footer from './components/Footer'
+import InfoPage from './components/InfoPage'
 import BottomSheet from './components/BottomSheet'
 import { useIsMobile } from './hooks/useIsMobile'
 import { addressToCoordinates } from './lib/kakao-map'
@@ -31,6 +33,7 @@ function PanelContent({
   onReselect,
   onExpandRadius,
   onKeyDown,
+  onNavigate,
 }: {
   location: string
   locationError: string
@@ -47,6 +50,7 @@ function PanelContent({
   onReselect: () => void
   onExpandRadius: () => void
   onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void
+  onNavigate: (page: 'about' | 'privacy' | 'terms') => void
 }) {
   return (
     <div className="space-y-6 min-w-0">
@@ -131,6 +135,9 @@ function PanelContent({
       <section className="border-t border-gray-200 pt-6">
         <LunchGuide />
       </section>
+
+      {/* 푸터 */}
+      <Footer onNavigate={onNavigate} />
     </div>
   )
 }
@@ -146,6 +153,9 @@ function App() {
   const [isLoading, setIsLoading] = useState(false)
   const [searchError, setSearchError] = useState('')
   const [searchRadius, setSearchRadius] = useState(1000)
+  const [currentPage, setCurrentPage] = useState<
+    'main' | 'about' | 'privacy' | 'terms'
+  >('main')
 
   const handleLocationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setLocation(e.target.value)
@@ -292,6 +302,7 @@ function App() {
     onReselect: handleReselect,
     onExpandRadius: handleExpandRadius,
     onKeyDown: handleKeyDown,
+    onNavigate: setCurrentPage,
   }
 
   return (
@@ -299,7 +310,14 @@ function App() {
       {/* 데스크톱: 사이드 패널 */}
       {!isMobile && (
         <aside className="w-1/3 max-w-md h-full overflow-y-auto p-6 bg-white shadow-lg z-10">
-          <PanelContent {...panelProps} />
+          {currentPage === 'main' ? (
+            <PanelContent {...panelProps} />
+          ) : (
+            <InfoPage
+              page={currentPage}
+              onBack={() => setCurrentPage('main')}
+            />
+          )}
         </aside>
       )}
 
@@ -315,7 +333,14 @@ function App() {
       {/* 모바일: 하단 시트 */}
       {isMobile && (
         <BottomSheet expanded={selectedRestaurant !== null}>
-          <PanelContent {...panelProps} />
+          {currentPage === 'main' ? (
+            <PanelContent {...panelProps} />
+          ) : (
+            <InfoPage
+              page={currentPage}
+              onBack={() => setCurrentPage('main')}
+            />
+          )}
         </BottomSheet>
       )}
     </div>
