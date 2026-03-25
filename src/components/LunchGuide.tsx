@@ -1,5 +1,3 @@
-import { useState } from 'react'
-
 const sections = [
   {
     title: '직장인 72%가 매일 겪는 점심 고민',
@@ -39,38 +37,26 @@ const sections = [
 ]
 
 export default function LunchGuide() {
-  const [isOpen, setIsOpen] = useState(true)
-
   return (
     <article className="bg-surface-50 rounded-xl border border-surface-200">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between px-4 py-3 text-left"
-      >
+      <div className="px-4 py-3">
         <h2 className="text-sm font-semibold text-gray-700">
           점심 메뉴, 어떻게 고르면 좋을까?
         </h2>
-        <span
-          className={`text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
-        >
-          ▾
-        </span>
-      </button>
+      </div>
 
-      {isOpen && (
-        <div className="px-4 pb-4 space-y-4">
-          {sections.map((section, i) => (
-            <div key={i}>
-              <h3 className="text-xs font-semibold text-primary-600 mb-1">
-                {section.title}
-              </h3>
-              <p className="text-xs text-gray-600 leading-relaxed">
-                {section.content}
-              </p>
-            </div>
-          ))}
-        </div>
-      )}
+      <div className="px-4 pb-4 space-y-4">
+        {sections.map((section, i) => (
+          <div key={i}>
+            <h3 className="text-xs font-semibold text-primary-600 mb-1">
+              {section.title}
+            </h3>
+            <p className="text-xs text-gray-600 leading-relaxed">
+              {section.content}
+            </p>
+          </div>
+        ))}
+      </div>
     </article>
   )
 }

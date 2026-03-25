@@ -1,4 +1,4 @@
-type PageType = 'about' | 'privacy' | 'terms'
+type PageType = 'about' | 'privacy' | 'terms' | 'guide'
 
 export default function Footer({
   onNavigate,
@@ -6,6 +6,7 @@ export default function Footer({
   onNavigate: (page: PageType) => void
 }) {
   const links: { label: string; page: PageType }[] = [
+    { label: '점심 가이드', page: 'guide' },
     { label: '서비스 소개', page: 'about' },
     { label: '개인정보처리방침', page: 'privacy' },
     { label: '이용약관', page: 'terms' },

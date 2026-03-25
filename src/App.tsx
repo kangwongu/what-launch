@@ -9,6 +9,7 @@ import RestaurantCard from './components/RestaurantCard'
 import LunchGuide from './components/LunchGuide'
 import Footer from './components/Footer'
 import InfoPage from './components/InfoPage'
+import GuidePage from './components/GuidePage'
 import BottomSheet from './components/BottomSheet'
 import { useIsMobile } from './hooks/useIsMobile'
 import { addressToCoordinates } from './lib/kakao-map'
@@ -50,7 +51,7 @@ function PanelContent({
   onReselect: () => void
   onExpandRadius: () => void
   onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void
-  onNavigate: (page: 'about' | 'privacy' | 'terms') => void
+  onNavigate: (page: 'about' | 'privacy' | 'terms' | 'guide') => void
 }) {
   return (
     <div className="space-y-6 min-w-0">
@@ -131,8 +132,29 @@ function PanelContent({
         </section>
       )}
 
-      {/* 점심 가이드 콘텐츠 */}
+      {/* 서비스 소개 */}
       <section className="border-t border-gray-200 pt-6">
+        <div className="bg-white rounded-xl border border-surface-200 px-4 py-4 space-y-3">
+          <h2 className="text-sm font-semibold text-gray-700">
+            What Launch — 점심 메뉴 랜덤 추천 서비스
+          </h2>
+          <p className="text-xs text-gray-600 leading-relaxed">
+            매일 반복되는 "오늘 점심 뭐 먹지?" 고민, What Launch가
+            해결해드립니다. 위치와 원하는 음식 장르를 선택하면 카카오맵 기반으로
+            주변 식당을 검색하여 랜덤으로 한 곳을 추천합니다. 결정 피로를 줄이고
+            새로운 맛집을 발견하는 즐거움을 경험해 보세요.
+          </p>
+          <p className="text-xs text-gray-600 leading-relaxed">
+            회사 이름, 건물명, 역 이름, 동네 이름 등 다양한 키워드로 위치를
+            검색할 수 있으며, 한식·중식·일식·양식·분식 등 원하는 장르를
+            선택하면 반경 내 식당 중 하나를 골라 지도와 함께 보여드립니다. 마음에
+            들지 않으면 다시 뽑기를 눌러 다른 식당을 추천받을 수 있습니다.
+          </p>
+        </div>
+      </section>
+
+      {/* 점심 가이드 콘텐츠 */}
+      <section className="pt-4">
         <LunchGuide />
       </section>
 
@@ -154,7 +176,7 @@ function App() {
   const [searchError, setSearchError] = useState('')
   const [searchRadius, setSearchRadius] = useState(1000)
   const [currentPage, setCurrentPage] = useState<
-    'main' | 'about' | 'privacy' | 'terms'
+    'main' | 'about' | 'privacy' | 'terms' | 'guide'
   >('main')
 
   const handleLocationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -312,6 +334,8 @@ function App() {
         <aside className="w-1/3 max-w-md h-full overflow-y-auto p-6 bg-white shadow-lg z-10">
           {currentPage === 'main' ? (
             <PanelContent {...panelProps} />
+          ) : currentPage === 'guide' ? (
+            <GuidePage onBack={() => setCurrentPage('main')} />
           ) : (
             <InfoPage
               page={currentPage}
@@ -335,6 +359,8 @@ function App() {
         <BottomSheet expanded={selectedRestaurant !== null}>
           {currentPage === 'main' ? (
             <PanelContent {...panelProps} />
+          ) : currentPage === 'guide' ? (
+            <GuidePage onBack={() => setCurrentPage('main')} />
           ) : (
             <InfoPage
               page={currentPage}
